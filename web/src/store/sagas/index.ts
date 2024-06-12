@@ -14,6 +14,7 @@ import {
   FETCH_DATASET,
   FETCH_DATASETS,
   FETCH_DATASET_VERSIONS,
+  FETCH_ES_SEARCH,
   FETCH_EVENTS,
   FETCH_JOBS,
   FETCH_JOB_FACETS,
@@ -27,6 +28,7 @@ import {
   Dataset,
   DatasetVersion,
   Datasets,
+  EsSearchResult,
   Events,
   Facets,
   Jobs,
@@ -73,6 +75,7 @@ import {
   fetchDatasetSuccess,
   fetchDatasetVersionsSuccess,
   fetchDatasetsSuccess,
+  fetchEsSearchSuccess,
   fetchEventsSuccess,
   fetchFacetsSuccess,
   fetchJobsSuccess,
@@ -83,8 +86,8 @@ import {
   fetchTagsSuccess,
 } from '../actionCreators'
 import { getColumnLineage } from '../requests/columnlineage'
+import { getEsSearch, getSearch } from '../requests/search'
 import { getLineage } from '../requests/lineage'
-import { getSearch } from '../requests/search'
 
 export function* fetchTags() {
   try {
@@ -376,6 +379,19 @@ export function* fetchRunFacetsSaga() {
   }
 }
 
+export function* fetchEsSearchSaga() {
+  while (true) {
+    try {
+      const { payload } = yield take(FETCH_ES_SEARCH)
+      const esSearchResult: EsSearchResult = yield call(getEsSearch, payload.q)
+      yield put(fetchEsSearchSuccess(esSearchResult))
+    } catch (e) {
+      console.log(e)
+      yield put(applicationError('Something went wrong while searching'))
+    }
+  }
+}
+
 export default function* rootSaga(): Generator {
   const sagasThatAreKickedOffImmediately = [fetchNamespaces(), fetchTags()]
   const sagasThatWatchForAction = [
@@ -391,6 +407,7 @@ export default function* rootSaga(): Generator {
     fetchColumnLineage(),
     fetchSearch(),
     deleteJobSaga(),
+    fetchEsSearchSaga(),
     deleteDatasetSaga(),
     deleteDatasetTagSaga(),
     addDatasetTagSaga(),
